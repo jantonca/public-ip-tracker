@@ -1,15 +1,17 @@
 # Public IP Tracker
 
-A lightweight and efficient public IP monitoring system designed for Alpine Linux and LXC containers. This tool tracks changes in your public IP address and sends email notifications when changes are detected.
+A lightweight and efficient public IP monitoring system designed for Alpine Linux and LXC containers. This tool tracks changes in your public IP address, updates Cloudflare DNS records, and sends notifications through multiple channels (email, Slack, Discord).
 
 ## 🌟 Features
 
 - 📡 Real-time public IP address monitoring
 - 📧 Email notifications for IP changes
-- 🔄 Multiple IP providers with fallback system
+- ☁️ Cloudflare DNS integration
+- 🔔 Multiple notification channels (Email, Slack, Discord)
+- 🔄 Multiple IP providers with failback system
 - 📊 System health monitoring
 - 📝 Efficient logging with rotation
-- 🛡️ Security-focused configuration
+- 🔒 Secure credential handling
 - 🏃‍♂️ Low resource usage
 - 🐳 Optimized for Alpine Linux and LXC containers
 
@@ -19,6 +21,9 @@ A lightweight and efficient public IP monitoring system designed for Alpine Linu
 - Root access
 - Basic system utilities (provided by BusyBox)
 - Internet connection
+- Gmail account or SMTP server (for email notifications)
+- Cloudflare account (optional, for DNS updates)
+- Slack/Discord webhooks (optional, for additional notifications)
 
 ## 🔧 Installation
 
@@ -78,42 +83,136 @@ mkdir -p var/log var/data
 chmod 755 var var/log var/data
 ```
 
-## ⚙️ Configuration
+## ⚙️ Configuration Guide
 
-### Main Configuration (config/config)
+### Required Configuration
 
-Edit the main configuration file:
+These settings are mandatory for the basic functionality (IP tracking and email notifications):
 
 ```bash
-vi config/config
+# Required Email Settings
+EMAIL_RECIPIENT="your-email@domain.com"    # Where notifications will be sent
+TZ="Australia/Sydney"                      # Your timezone
+
+# Required SMTP Configuration (/etc/msmtprc)
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        /var/log/msmtp.log
+
+account        gmail
+host           smtp.gmail.com
+port           587
+from           your-email@gmail.com
+user           your-email@gmail.com
+password       your-app-specific-password
+
+account default : gmail
 ```
 
-Essential settings to modify:
+### Optional Features
+
+#### 1. System Monitoring Thresholds
+
+Optional settings for health checks. If not set, defaults will be used.
 
 ```bash
-# Email recipient for notifications
+# System monitoring (optional, showing default values)
+DISK_THRESHOLD=90            # Disk usage warning threshold (%)
+MEMORY_THRESHOLD=90         # Memory usage warning threshold (%)
+LOAD_THRESHOLD=4           # System load warning threshold
+VERBOSE_LOGGING=false      # Enable detailed logging
+LOG_LEVEL=INFO            # Logging level (DEBUG, INFO, WARN, ERROR)
+```
+
+#### 2. Cloudflare Integration (Optional)
+
+Required only if you want to update Cloudflare DNS records:
+
+```bash
+# Enable Cloudflare integration
+CLOUDFLARE_ENABLED=true                          # Set to true to enable
+
+# Required for Cloudflare (if enabled)
+CLOUDFLARE_AUTH_EMAIL="your-email@domain.com"    # Cloudflare login email
+CLOUDFLARE_AUTH_METHOD="token"                   # Use "token" or "global"
+CLOUDFLARE_AUTH_KEY="your-api-key-or-token"     # API Token or Global Key
+CLOUDFLARE_ZONE_ID="your-zone-id"               # Found in Domain Overview
+CLOUDFLARE_RECORD_NAME="your.domain.com"        # DNS record to update
+
+# Optional Cloudflare settings (showing defaults)
+CLOUDFLARE_TTL=3600                             # DNS record TTL
+CLOUDFLARE_PROXY=false                          # Cloudflare proxy status
+CLOUDFLARE_SITE_NAME="Your Site Name"           # Used in notifications
+```
+
+To find your Cloudflare credentials:
+
+1. Zone ID: Dashboard → Domain → Overview → Zone ID
+2. API Token: Dashboard → Profile → API Tokens → Create Token
+3. Global API Key: Dashboard → Profile → API Tokens → View Global API Key
+
+#### 3. Additional Notifications (Optional)
+
+Configure these only if you want Slack or Discord notifications:
+
+```bash
+# Slack notifications (optional)
+CLOUDFLARE_SLACK_CHANNEL="#your-channel"        # Include the # symbol
+CLOUDFLARE_SLACK_URI="https://hooks.slack.com/services/xxx"
+
+# Discord notifications (optional)
+CLOUDFLARE_DISCORD_URI="https://discord.com/api/webhooks/xxx"
+```
+
+#### 4. Advanced Settings (Optional)
+
+Fine-tune the behavior of the script:
+
+```bash
+# Performance settings (optional, showing defaults)
+MAX_LOG_SIZE=1048576                # Max log size before rotation (1MB)
+RETRY_ATTEMPTS=2                    # Number of retry attempts
+RETRY_DELAY=3                       # Seconds between retries
+LOG_RETENTION_DAYS=30               # Days to keep old logs
+
+# Debug settings (optional)
+DEBUG_MODE=false                    # Enable debug output
+ENABLE_PROFILING=false             # Enable performance profiling
+SAVE_HEALTH_REPORTS=true           # Save detailed health reports
+```
+
+### Configuration Priority
+
+1. **Must Configure**:
+
+   - Email recipient (`EMAIL_RECIPIENT`)
+   - Timezone (`TZ`)
+   - SMTP settings in `/etc/msmtprc`
+
+2. **Recommended to Review**:
+
+   - System monitoring thresholds
+   - Log settings
+   - Retry settings
+
+3. **Optional Features**:
+   - Cloudflare DNS updates
+   - Slack notifications
+   - Discord notifications
+   - Debug settings
+
+### Quick Start Configurations
+
+#### Minimal Working Setup
+
+```bash
+# In config/config
 EMAIL_RECIPIENT="your-email@domain.com"
+TZ="Australia/Sydney"
 
-# Timezone
-TZ="Your/Timezone"
-
-# Optional: Adjust check intervals and thresholds
-DISK_THRESHOLD=90
-MEMORY_THRESHOLD=90
-LOAD_THRESHOLD=4
-```
-
-### Email Configuration (/etc/msmtprc)
-
-Edit the email configuration:
-
-```bash
-vi /etc/msmtprc
-```
-
-For Gmail (recommended setup):
-
-```
+# In /etc/msmtprc
 defaults
 auth           on
 tls            on
@@ -138,53 +237,6 @@ account default : gmail
    - Security → App Passwords
    - Select "Mail" and your device
    - Use the generated 16-character password
-
-### Cloudflare Integration
-
-To enable Cloudflare DNS updates:
-
-1. Set `CLOUDFLARE_ENABLED=true` in your config file
-2. Configure your Cloudflare credentials:
-
-```bash
-# Cloudflare authentication
-CLOUDFLARE_AUTH_EMAIL="your-email@domain.com"
-CLOUDFLARE_AUTH_METHOD="token"    # Use "token" for API Token or "global" for Global API Key
-CLOUDFLARE_AUTH_KEY="your-api-key-or-token"
-CLOUDFLARE_ZONE_ID="your-zone-id"
-CLOUDFLARE_RECORD_NAME="your.domain.com"
-
-# DNS settings
-CLOUDFLARE_TTL=3600
-CLOUDFLARE_PROXY=false
-CLOUDFLARE_SITE_NAME="Your Site Name"
-```
-
-Optional: Configure notifications via Slack or Discord:
-
-```bash
-# Slack notification
-CLOUDFLARE_SLACK_CHANNEL="#your-channel"
-CLOUDFLARE_SLACK_URI="https://hooks.slack.com/services/your-webhook-uri"
-
-# Discord notification
-CLOUDFLARE_DISCORD_URI="https://discord.com/api/webhooks/your-webhook-uri"
-```
-
-To find your Cloudflare credentials:
-
-1. Zone ID: Dashboard → Domain → Overview → Zone ID
-2. API Token: Dashboard → Profile → API Tokens → Create Token
-3. Global API Key: Dashboard → Profile → API Tokens → View Global API Key
-
-#### Testing Cloudflare Integration
-
-Test your Cloudflare configuration:
-
-```bash
-# Force an update check
-/root/public-ip-tracker/src/ip-tracker.sh
-```
 
 ## 🚀 Usage
 
@@ -250,6 +302,24 @@ public-ip-tracker/
     └── data/              # Application data
 ```
 
+## 🔐 Security Considerations
+
+### API Tokens and Credentials
+
+- Use Cloudflare API Tokens instead of Global API Keys when possible
+- Store configuration files with restricted permissions (600)
+- Use app-specific passwords for Gmail
+- Regularly rotate credentials
+
+### File Permissions
+
+```bash
+# Verify correct permissions
+chmod 600 /etc/msmtprc
+chmod 600 config/config
+chmod 755 src/ip-tracker.sh
+```
+
 ## 📊 Monitoring and Maintenance
 
 ### Log Files
@@ -309,6 +379,32 @@ git pull
    - Check cron service: `rc-service crond status`
    - Verify cron entry: `crontab -l`
    - Check script permissions
+
+### Cloudflare Issues
+
+1. API Token not working:
+
+   - Verify token has correct permissions
+   - Check Zone ID matches domain
+   - Ensure record exists in Cloudflare
+
+2. DNS not updating:
+   - Check API response in logs
+   - Verify record name matches exactly
+   - Confirm proxy setting
+
+### Notification Issues
+
+1. Slack not working:
+
+   - Verify webhook URL
+   - Check channel name format (#channel)
+   - Test webhook manually
+
+2. Discord not working:
+   - Verify webhook URL
+   - Test webhook with curl
+   - Check server permissions
 
 ### Debug Mode
 
