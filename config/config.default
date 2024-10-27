@@ -132,3 +132,27 @@ SECURITY_CHECKS_ENABLED=true
 
 # Custom command to run after health check
 #POST_HEALTH_CHECK_COMMAND=""
+
+#########################
+# Cloudflare Settings    #
+#########################
+
+# Enable Cloudflare integration
+CLOUDFLARE_ENABLED=false
+
+# Cloudflare authentication
+CLOUDFLARE_AUTH_EMAIL=""          # The email used to login 'https://dash.cloudflare.com'
+CLOUDFLARE_AUTH_METHOD="token"    # Set to "global" for Global API Key or "token" for Scoped API Token
+CLOUDFLARE_AUTH_KEY=""           # Your API Token or Global API Key
+CLOUDFLARE_ZONE_ID=""           # Can be found in the "Overview" tab of your domain
+CLOUDFLARE_RECORD_NAME=""       # Which record you want to be synced
+
+# DNS settings
+CLOUDFLARE_TTL=3600             # Set the DNS TTL (seconds)
+CLOUDFLARE_PROXY=false          # Set the proxy to true or false
+CLOUDFLARE_SITE_NAME=""        # Title of site "Example Site"
+
+# Notification settings
+CLOUDFLARE_SLACK_CHANNEL=""    # Slack Channel #example
+CLOUDFLARE_SLACK_URI=""        # URI for Slack WebHook "https://hooks.slack.com/services/xxxxx"
+CLOUDFLARE_DISCORD_URI=""      # URI for Discord WebHook "https://discordapp.com/api/webhooks/xxxxx"

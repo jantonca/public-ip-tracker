@@ -9,6 +9,7 @@ LIB_DIR="$SCRIPT_DIR/lib"
 . "$LIB_DIR/ip.sh"
 . "$LIB_DIR/email.sh"
 . "$LIB_DIR/health.sh"
+. "$LIB_DIR/cloudflare.sh"
 
 # Main execution
 main() {
@@ -34,7 +35,26 @@ main() {
     last_ip=$(get_last_ip)
 
     # Handle IP change
-    handle_ip_change "$current_ip" "$last_ip"
+    if [ "$current_ip" != "$last_ip" ]; then
+        log_info "IP change detected: $last_ip -> $current_ip"
+        
+        # Update Cloudflare if enabled
+        if [ "${CLOUDFLARE_ENABLED:-false}" = "true" ]; then
+            if validate_cloudflare_config; then
+                update_cloudflare_dns "$current_ip" "$last_ip"
+            else
+                log_error "Invalid Cloudflare configuration"
+            fi
+        fi
+        
+        # Send email notification
+        notify_ip_change "Public IP changed from ${last_ip:-'(none)'} to $current_ip"
+        
+        # Save new IP
+        save_current_ip "$current_ip"
+    else
+        log_debug "No IP change detected. Current IP: $current_ip"
+    fi
 
     # Perform cleanup
     cleanup_old_logs
