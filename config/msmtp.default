@@ -1,0 +1,31 @@
+# Default configuration for msmtp
+# Copy this file to /etc/msmtprc and modify as needed
+
+# Set default values for all accounts
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        /var/log/msmtp.log
+
+# Gmail account configuration
+account        gmail
+host           smtp.gmail.com
+port           587
+from           your-email@gmail.com
+user           your-email@gmail.com
+password       your-app-specific-password
+
+# Office 365 account (uncomment and modify if using Office 365)
+#account        office365
+#host           smtp.office365.com
+#port           587
+#from           your-email@your-domain.com
+#user           your-email@your-domain.com
+#password       your-password
+
+# Default account to use
+account default : gmail
+
+# Security note: After copying this file, set permissions:
+# chmod 600 /etc/msmtprc

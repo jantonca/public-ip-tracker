@@ -1,12 +1,17 @@
 # Runtime data
+/var/
 var/
 *.log
 *.log.*
 *.gz
 
-# Configuration
-config/config
-config/msmtp.conf
+# Instance-specific configurations
+/config/config
+/config/msmtp.conf
+/etc/msmtprc
+
+# Only keep .default files for configurations
+!/config/*.default
 
 # System files
 .DS_Store
@@ -18,7 +23,15 @@ config/msmtp.conf
 .idea/
 *.swp
 *.swo
+*~
 
 # Temporary files
 *.tmp
-*~
+temp/
+tmp/
+
+# Runtime state files
+*.pid
+*.state
+last_ip.txt
+health_status
